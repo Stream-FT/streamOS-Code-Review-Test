@@ -46,8 +46,8 @@ The endpoint is responsible for creating invoices in the accounting platform. It
 
 Routes:
 
-1. POST `/organization/:orgId/approval`[]
-2. PATCH `/organization/:orgId/approval/:approvalId`[]
+1. [POST `/organization/:orgId/approval`](https://github.com/Stream-FT/streamOS-Code-Review-Test/blob/5da47a45fac7d1587f6c5e3b65f4ea45e957e358/onboarding/src/core/approval/approval.router.ts#L13)
+2. [PATCH `/organization/:orgId/approval/:approvalId`](https://github.com/Stream-FT/streamOS-Code-Review-Test/blob/5da47a45fac7d1587f6c5e3b65f4ea45e957e358/onboarding/src/core/approval/approval.router.ts#L19)
 
 ## Deliverables
 - Document with critical analysis.
