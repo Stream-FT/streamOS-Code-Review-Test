@@ -44,6 +44,11 @@ The endpoint is responsible for creating invoices in the accounting platform. It
 
 - Returning the created invoice data in a standardized response format.
 
+Routes:
+
+1. POST `/organization/:orgId/approval`[]
+2. PATCH `/organization/:orgId/approval/:approvalId`[]
+
 ## Deliverables
 - Document with critical analysis.
   

@@ -1,0 +1,1630 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["tracing"]
+}
+
+datasource db {
+  provider = "cockroachdb"
+  url      = env("DATABASE_URL")
+}
+
+model user {
+  id                        String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id           String                    @db.Uuid
+  email_id                  String                    @unique
+  first_name                String?
+  last_name                 String?
+  full_name                 String?
+  slack_user_id             String?                    @unique
+  slack_user_name           String?
+  approver_slack_user_id    String?
+  phone                     String?
+  slack_user_role           String?
+  organization_user_role_id String
+  auth0_id                  String?                   @unique
+  is_deleted                Boolean                   @default(false)
+  is_email_verified         Boolean                   @default(false)
+  created_at                DateTime                  @default(now()) @db.Timestamptz(3)
+  updated_at                DateTime                  @updatedAt @db.Timestamptz(3)
+  password                  String?
+  password_reset_token      Json?
+  object_approver           object_approver[]
+  organization_group_user   organization_group_user[]
+}
+
+model organization {
+  id                              String                         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  business_email                  String?
+  business_name                   String?
+  business_phone                  String?
+  business_website                String?
+  business_ein                    String?
+  business_address_1              String?
+  business_address_2              String?
+  business_zip_code               String?
+  business_city                   String?
+  business_state                  us_state?
+  is_business_email_verified      Boolean?
+  is_business_phone_verified      Boolean?
+  created_at                      DateTime                       @default(now()) @db.Timestamptz(3)
+  updated_at                      DateTime                       @updatedAt @db.Timestamptz(3)
+  realm_id                        String?                        @unique
+  driver_id                       String?                        @unique
+  access_token                    String?
+  incoming_webhook_url            String?
+  uac_realm_id                    String?                        @unique
+  uac_connection_id               String?                        @unique
+  uac_access_token                String?                        @unique
+  slack_team_id                   String?
+  slack_incomingwebhook_url       String?
+  slack_app_token                 String?
+  slack_bot_token                 String?
+  gmail_client_secret             Json?
+  gmail_token                     Json?
+  uac_platform                    String?
+  uac_refresh_token               String?
+  uac_business_id                 String?
+  uac_user_id                     String?
+  uac_token_expires_in            BigInt?
+  agent_status                    Boolean?                       @default(false)
+  uac_email_external_send_enabled Boolean?                       @default(false)
+  invoice_create_override         Boolean?                       @default(false)
+  uac_environment                 String?
+  acc_uac_invoice                 acc_uac_invoice[]
+  approvals                       approval[]
+  automation_workflow             automation_workflow[]
+  contract                        contract[]
+  contract_signature              contract_signature[]
+  credit_grant                    credit_grant[]
+  customer                        customer[]
+  invoice_adjustments             invoice_adjustment[]
+  invoice_adjustment_line_items   invoice_adjustment_line_item[]
+  object_status                   object_status[]
+  addons                          organization_addon[]
+  plaid_auth_data                 plaid_auth_data[]
+  product_to_uac_item             product_to_uac_item[]
+  reconciliation_match            reconciliation_match[]
+  reconciliation_setting          reconciliation_setting[]
+  uac_bill                        uac_bill[]
+  uac_bill_payments               uac_bill_payments[]
+  uac_customer                    uac_customer[]
+  uac_invoice                     uac_invoice[]
+  uac_item                        uac_item[]
+  uac_purchase_order              uac_purchase_order[]
+  uac_requests                    uac_requests[]
+  uac_vendor                      uac_vendor[]
+  usage                           usage[]
+  user_group                      user_group[]
+}
+
+model plaid_auth_data {
+  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  item_id         String?      @unique
+  created_at      DateTime     @default(now()) @db.Timestamptz(3)
+  updated_at      DateTime     @updatedAt @db.Timestamptz(3)
+  access_token    String
+  organization_id String       @db.Uuid
+  organization    organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+}
+
+model reconciliation_setting {
+  id              String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id String?              @db.Uuid
+  scope           reconciliation_scope
+  key             String
+  value           Json
+  createdAt       DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
+  organization    organization?        @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+}
+
+model user_group {
+  id                        String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id           String                    @db.Uuid
+  group_name                String?
+  notification_type         String?
+  notification_level        String?
+  is_in_app_channel_enabled Boolean?                  @default(true)
+  is_slack_channel_enabled  Boolean?                  @default(true)
+  is_email_channel_enabled  Boolean?                  @default(true)
+  organization_group_user   organization_group_user[]
+  organization              organization              @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@map("user_group")
+}
+
+model organization_group_user {
+  id            String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id       String     @db.Uuid
+  user_group_id String     @db.Uuid
+  user_group    user_group @relation(fields: [user_group_id], references: [id], onDelete: Cascade)
+  user          user       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("organization_group_user")
+}
+
+model automation_workflow {
+  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id String       @db.Uuid
+  description     String?
+  trigger         Json
+  action          Json
+  created_at      DateTime     @default(now()) @db.Timestamptz(3)
+  updated_at      DateTime     @updatedAt @db.Timestamptz(3)
+  organization    organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+}
+
+model uac_customer {
+  id                  String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id     String              @db.Uuid
+  provider_entity_id  String?             @unique(map: "unique_provider_entity_id")
+  platform_id         String?
+  status              uac_customer_status
+  contact_name        String?
+  currency_code       currency?
+  customer_name       String?
+  email               String?
+  phone               String?
+  registration_number String?
+  tax_number          String?
+  created_at          DateTime            @default(now()) @db.Timestamptz(3)
+  updated_at          DateTime            @updatedAt @db.Timestamptz(3)
+  objType             String              @default("uac_customer")
+  provider            String              @default("unknown")
+  source_type         String              @default("ACCOUNTING")
+  subsidiary_id       String?             @db.Uuid
+  acc_uac_invoice     acc_uac_invoice[]
+  customers           customer[]
+  addresses           uac_address[]
+  organization        organization        @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  subsidiary          uac_subsidiary?     @relation(fields: [subsidiary_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([organization_id, provider_entity_id], name: "unique_organization_id_provider_entity_id")
+}
+
+model uac_address {
+  id              String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  uac_customer_id String?          @db.Uuid
+  uac_vendor_id   String?          @db.Uuid
+  organization_id String?          @db.Uuid
+  type            uac_address_type
+  address1        String?
+  address2        String?
+  city            String?
+  country         String?
+  postal_code     String?
+  region          String?
+  created_at      DateTime         @default(now()) @db.Timestamptz(3)
+  updated_at      DateTime         @updatedAt @db.Timestamptz(3)
+  customer        uac_customer?    @relation(fields: [uac_customer_id], references: [id], onDelete: Cascade)
+  vendor          uac_vendor?      @relation(fields: [uac_vendor_id], references: [id], onDelete: Cascade)
+
+  @@unique([uac_customer_id, type], name: "unique_uac_customer_id_type")
+  @@unique([uac_vendor_id, type], name: "unique_uac_vendor_id_type")
+}
+
+model uac_item {
+  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  provider_entity_id  String?
+  organization_id     String                @db.Uuid
+  platform_id         String?
+  bill_item_id        String?               @db.Uuid
+  invoice_item_id     String?               @db.Uuid
+  status              uac_item_status
+  type                uac_item_type
+  code                String?
+  name                String?
+  quantity_on_hand    Int?
+  created_at          DateTime              @default(now()) @db.Timestamptz(3)
+  updated_at          DateTime              @updatedAt @db.Timestamptz(3)
+  product             product[]
+  product_to_uac_item product_to_uac_item[]
+  bill_item           uac_item_line_detail? @relation("BillItemDetail", fields: [bill_item_id], references: [id], onDelete: Cascade)
+  invoice_item        uac_item_line_detail? @relation("InvoiceItemDetail", fields: [invoice_item_id], references: [id], onDelete: Cascade)
+  organization        organization          @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@unique([organization_id, provider_entity_id], name: "unique_organization_id_provider_entity_id")
+}
+
+model uac_item_line_detail {
+  id               String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  account_id       String?
+  unit_price       Decimal?                  @db.Decimal(10, 2)
+  description      String?
+  type             uac_item_line_detail_type
+  created_at       DateTime                  @default(now()) @db.Timestamptz(3)
+  updated_at       DateTime                  @updatedAt @db.Timestamptz(3)
+  uac_item_bill    uac_item[]                @relation("BillItemDetail")
+  uac_item_invoice uac_item[]                @relation("InvoiceItemDetail")
+}
+
+model uac_vendor {
+  id                  String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id     String            @db.Uuid
+  provider_entity_id  String?
+  platform_id         String?
+  status              uac_vendor_status
+  contact_name        String?
+  currency_code       currency?
+  vendor_name         String?
+  email               String?
+  phone               String?
+  registration_number String?
+  tax_number          String?
+  website             String?
+  created_at          DateTime          @default(now()) @db.Timestamptz(3)
+  updated_at          DateTime          @updatedAt @db.Timestamptz(3)
+  vendors             customer[]
+  addresses           uac_address[]
+  organization        organization      @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@unique([organization_id, provider_entity_id], name: "unique_organization_id_provider_entity_id")
+}
+
+model uac_bill {
+  id                     String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id        String                    @db.Uuid
+  platform_id            String?
+  memo                   String?
+  document_number        String?
+  account_id             String?
+  vendor_id              String?
+  subsidiary_id          String?
+  issue_date             String?
+  due_date               String?
+  currency_code          String?
+  status                 uac_bill_status?
+  amount_due             Float?
+  total_amount           Float?
+  sub_total              Float?
+  tax_amount             Float?
+  created_at             String?
+  updated_at             String?
+  platform_data          Json?
+  total_discount         Decimal?                  @db.Decimal
+  organization           organization              @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  linked_payments        uac_bill_payment[]
+  linked_purchase_orders uac_bill_purchase_order[]
+
+  @@unique([organization_id, id], name: "unique_organization_id_bill_id")
+}
+
+model uac_line_item {
+  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  uac_bill_id           String?               @db.Uuid
+  uac_bill_payments_id  String?               @db.Uuid
+  uac_purchase_order_id String?               @db.Uuid
+  uac_invoice_id        String?               @db.Uuid
+  provider_entity_id    String?
+  description           String?
+  account_id            String?
+  platform_id           String?
+  class_id              String?
+  customer_id           String?
+  department_id         String?
+  item_id               String?
+  location_id           String?
+  tax_rate_id           String?
+  amount                Float?
+  discount_percentage   Float?
+  discount_amount       Float?
+  quantity              Float?
+  sub_total             Float?
+  allocated_amount      Decimal?
+  allocated_at          String?
+  tax_amount            Float?
+  unit_amount           Float?
+  created_at            DateTime              @default(now()) @db.Timestamptz(3)
+  updated_at            DateTime              @default(now()) @updatedAt @db.Timestamptz(3)
+  total_amount          Decimal?              @db.Decimal(10, 2)
+  product_id            String?               @db.Uuid
+  pricer_index          Int?
+  contract_id           String?               @db.Uuid
+  acc_uac_invoice_id    String?               @db.Uuid
+  suppress_line_item    Boolean?              @default(false)
+  invoice_adjustment_line_item invoice_adjustment_line_item[]
+  uac_invoice           uac_invoice?          @relation(fields: [uac_invoice_id], references: [id], onDelete: Cascade)
+  sort_order            BigInt                @default(0)
+  acc_uac_invoice       acc_uac_invoice?      @relation(fields: [acc_uac_invoice_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_acc_uac_invoice")
+  contract              contract?             @relation(fields: [contract_id], references: [contract_id])
+  product               product?              @relation(fields: [product_id], references: [product_id], onDelete: Cascade)
+  
+  uac_line_item_detail  uac_line_item_detail?
+}
+
+model uac_line_item_detail {
+  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  item_id          String?
+  quantity         Int?
+  unit_amount      Float?
+  uac_line_item_id String        @unique @db.Uuid
+  created_at       DateTime      @default(now()) @db.Timestamptz(3)
+  updated_at       DateTime      @updatedAt @db.Timestamptz(3)
+  uac_line_item    uac_line_item @relation(fields: [uac_line_item_id], references: [id], onDelete: Cascade)
+}
+
+model uac_bill_purchase_order {
+  id          String   @id @db.Uuid
+  uac_bill_id String   @db.Uuid
+  uac_bill    uac_bill @relation(fields: [uac_bill_id], references: [id], onDelete: Cascade)
+}
+
+model uac_bill_payment {
+  id               String                 @id @db.Uuid
+  uac_bill_id      String                 @db.Uuid
+  allocated_date   String?
+  allocated_amount Float?
+  type             uac_bill_payment_type?
+  uac_bill         uac_bill               @relation(fields: [uac_bill_id], references: [id], onDelete: Cascade)
+}
+
+model uac_purchase_order {
+  id                 String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id    String                    @db.Uuid
+  provider_entity_id String?
+  platform_id        String?
+  vendor_id          String?
+  issue_date         DateTime?
+  status             uac_purchase_order_status
+  currency_code      currency?
+  document_number    String?
+  memo               String?
+  total_amount       Decimal?                  @db.Decimal(10, 2)
+  total_quantity     Int?
+  created_at         DateTime                  @default(now()) @db.Timestamptz(3)
+  updated_at         DateTime                  @updatedAt @db.Timestamptz(3)
+  organization       organization              @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@unique([organization_id, provider_entity_id], name: "unique_organization_id_provider_entity_id")
+}
+
+model uac_bill_payments {
+  id              String                          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id String                          @db.Uuid
+  platform_id     String?
+  vendor_id       String?
+  account_id      String?
+  total_amount    Decimal?                        @db.Decimal(10, 2)
+  currency_code   currency?
+  memo            String?
+  currency_rate   String?
+  txn_date        String?
+  created_at      DateTime                        @default(now()) @db.Timestamptz(3)
+  updated_at      DateTime                        @updatedAt @db.Timestamptz(3)
+  organization    organization                    @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  linked_bills    uac_bill_payments_linked_bill[]
+}
+
+model uac_bill_payments_linked_bill {
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  bill_payment_id  String            @db.Uuid
+  allocated_amount Decimal?          @db.Decimal(10, 2)
+  allocated_date   String?
+  bill_payment     uac_bill_payments @relation(fields: [bill_payment_id], references: [id], onDelete: Cascade)
+}
+
+model uac_invoice {
+  id                 String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id    String                @db.Uuid
+  provider_entity_id String?
+  platform_id        String?
+  account_id         String?
+  customer_id        String?
+  stream_customer_id String               @db.Uuid
+  subsidiary_id      String?
+  issue_date         DateTime?
+  due_date           DateTime?
+  memo               String?
+  document_number    String?
+  currency_code      String?
+  amount_due         Decimal?              @db.Decimal(10, 2)
+  total_amount       Decimal?              @db.Decimal(10, 2)
+  sub_total          Decimal?              @db.Decimal(10, 2)
+  tax_amount         Decimal?              @db.Decimal(10, 2)
+  total_discount     Decimal?              @db.Decimal(10, 2)
+  created_at         DateTime              @default(now()) @db.Timestamptz(3)
+  updated_at         DateTime              @updatedAt @db.Timestamptz(3)
+  synced             Boolean               @default(false)
+  pricer_invoice_id  String?               @unique @db.Uuid
+  term               String?               @default("30")
+  platform_url       String?
+  is_vendor          Boolean?              @default(false)
+  po_number          String?
+  period_start_date  DateTime?
+  period_end_date    DateTime?
+  payment_terms      Int?
+  approvals          approval[]
+  adjustments        invoice_adjustment[]
+  organization       organization          @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  stream_customer    customer               @relation(fields: [stream_customer_id], references: [customer_id], onDelete: Cascade)
+  linked_payments    uac_invoice_payment[]
+  line_items         uac_line_item[]
+
+  @@unique([organization_id, provider_entity_id], name: "unique_organization_id_provider_entity_id")
+}
+
+model uac_invoice_payment {
+  id                 String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  payment_id         String?                  @db.Uuid
+  uac_invoice_id     String?                  @db.Uuid
+  date               DateTime?
+  amount             Decimal?                 @db.Decimal(10, 2)
+  type               uac_invoice_payment_type
+  acc_uac_invoice_id String?                  @db.Uuid
+  organization_id    String?                  @db.Uuid
+  updated_at         DateTime                 @default(now()) @db.Timestamp(6)
+  acc_uac_invoice    acc_uac_invoice?         @relation(fields: [acc_uac_invoice_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_acc_uac_invoice")
+  uac_invoice        uac_invoice?             @relation(fields: [uac_invoice_id], references: [id], onDelete: Cascade)
+}
+
+model unprocessed_uac_invoice_payment {
+  id                 String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  payment_id         String?                  @db.Uuid
+  uac_invoice_id     String?                  @db.Uuid
+  date               DateTime?                @db.Timestamptz(6)
+  amount             Decimal?                 @db.Decimal(10, 2)
+  type               uac_invoice_payment_type
+  acc_uac_invoice_id String?                  @db.Uuid
+  organization_id    String?                  @db.Uuid
+  acc_uac_invoice    acc_uac_invoice?         @relation(fields: [acc_uac_invoice_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_acc_uac_invoice")
+}
+
+model reconciliation_match {
+  id              String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  source_type     reconciliation_object_type
+  reference_type  reconciliation_object_type
+  organization_id String                     @db.Uuid
+  created_at      DateTime                   @default(now()) @db.Timestamptz(3)
+  updated_at      DateTime                   @updatedAt @db.Timestamptz(3)
+  source_id       String                     @db.Uuid
+  reference_id    String                     @db.Uuid
+  organization    organization               @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+}
+
+model object_approver {
+  id        String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  object_id String @db.Uuid
+  user_id   String @db.Uuid
+  user      user   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("object_approver")
+}
+
+model object_status {
+  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  object_id       String       @db.Uuid
+  organization_id String       @db.Uuid
+  status          String?
+  organization    organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@map("object_status")
+}
+
+model customer {
+  customer_id           String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customer_name         String?               @map("customer_name")
+  customer_email        String?               @map("customer_email")
+  additional_fields     Json?                 @map("additional_fields")
+  objType               String                @default("customer")
+  organization_id       String                @map("organization_id") @db.Uuid
+  created_at            DateTime?             @default(now()) @db.Timestamptz(3)
+  updated_at            DateTime?             @default(now()) @updatedAt @db.Timestamptz(3)
+  uac_customer_id       String?               @db.Uuid
+  reconciliation_status ReconciliationStatus? @default(UNMATCHED)
+  is_vendor             Boolean?              @default(false)
+  uac_vendor_id         String?               @db.Uuid
+  contracts             contract[]
+  credit_grants         credit_grant[]
+  organization          organization          @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  uac_customer          uac_customer?         @relation(fields: [uac_customer_id], references: [id])
+  uac_vendor            uac_vendor?           @relation(fields: [uac_vendor_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_uac_vendor")
+  addons                customer_addon[]
+  uac_invoices          uac_invoice[]
+  usages                usage[]
+
+  @@map("customer")
+}
+
+model contract {
+  contract_id               String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customer_id               String?                    @map("customer_id") @db.Uuid
+  start_date                DateTime?                  @map("start_date") @db.Date
+  end_date                  DateTime?                  @map("end_date") @db.Date
+  min_contract_spend        Float?                     @map("min_contract_spend")
+  additional_fields         Json?                      @map("additional_fields")
+  contract_name             String?                    @map("contract_name")
+  organization_id           String?                    @db.Uuid
+  created_at                DateTime?                  @default(now()) @db.Timestamptz(3)
+  updated_at                DateTime?                  @updatedAt @db.Timestamptz(3)
+  customer                  customer?                  @relation(fields: [customer_id], references: [customer_id], onDelete: Cascade)
+  organization              organization?              @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  addons                    contract_addon[]
+  contract_products         contract_product[]
+  contract_results          contract_results[]
+  credit_grant_restrictions credit_grant_restriction[]
+  uac_line_items            uac_line_item[]
+
+  @@map("contract")
+}
+
+model product {
+  product_id                String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  product_name              String?                    @map("product_name")
+  description               String?                    @map("description")
+  organization_id           String                     @map("organization_id") @db.Uuid
+  unit_price                Float?                     @map("unit_price")
+  is_addon                  Boolean?                   @default(false) @map("is_addon")
+  additional_fields         Json?                      @map("additional_fields")
+  created_at                DateTime?                  @default(now()) @db.Timestamptz(3)
+  updated_at                DateTime?                  @updatedAt @db.Timestamptz(3)
+  reason                    String?
+  uac_item_id               String?                    @db.Uuid
+  reconciliation_status     ReconciliationStatus?      @default(UNMATCHED)
+  true_product              Boolean?                   @default(true)
+  is_vendor                 Boolean?                   @default(false)
+  approvals                 approval[]
+  addon_contracts           contract_addon[]
+  contract_products         contract_product[]
+  credit_grant_restrictions credit_grant_restriction[]
+  addon_customers           customer_addon[]
+  addon_organizations       organization_addon[]
+  uac_item                  uac_item?                  @relation(fields: [uac_item_id], references: [id])
+  addon_products            product_addon[]            @relation("AddonToProduct")
+  addons                    product_addon[]            @relation("ProductToAddon")
+  uac_line_items            uac_line_item[]
+  usages                    usage[]
+
+  @@map("product")
+}
+
+model organization_addon {
+  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id String       @db.Uuid
+  addon_id        String       @db.Uuid
+  created_at      DateTime     @default(now()) @db.Timestamptz(3)
+  updated_at      DateTime     @updatedAt @db.Timestamptz(3)
+  approvals       approval[]
+  addon           product      @relation(fields: [addon_id], references: [product_id], onDelete: Cascade)
+  organization    organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@unique([organization_id, addon_id])
+}
+
+model customer_addon {
+  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customer_id String     @db.Uuid
+  addon_id    String     @db.Uuid
+  created_at  DateTime   @default(now()) @db.Timestamptz(3)
+  updated_at  DateTime   @updatedAt @db.Timestamptz(3)
+  approvals   approval[]
+  addon       product    @relation(fields: [addon_id], references: [product_id], onDelete: Cascade)
+  customer    customer   @relation(fields: [customer_id], references: [customer_id], onDelete: Cascade)
+
+  @@unique([customer_id, addon_id])
+}
+
+model contract_addon {
+  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  contract_id String     @db.Uuid
+  addon_id    String     @db.Uuid
+  created_at  DateTime   @default(now()) @db.Timestamptz(3)
+  updated_at  DateTime   @updatedAt @db.Timestamptz(3)
+  approvals   approval[]
+  addon       product    @relation(fields: [addon_id], references: [product_id], onDelete: Cascade)
+  contract    contract   @relation(fields: [contract_id], references: [contract_id], onDelete: Cascade)
+
+  @@unique([contract_id, addon_id])
+}
+
+model product_addon {
+  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  product_id String     @db.Uuid
+  addon_id   String     @db.Uuid
+  created_at DateTime   @default(now()) @db.Timestamptz(3)
+  updated_at DateTime   @updatedAt @db.Timestamptz(3)
+  approvals  approval[]
+  addon      product    @relation("AddonToProduct", fields: [addon_id], references: [product_id], onDelete: Cascade)
+  product    product    @relation("ProductToAddon", fields: [product_id], references: [product_id], onDelete: Cascade)
+
+  @@unique([product_id, addon_id])
+}
+
+model usage {
+  usage_id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id   String       @map("organization_id") @db.Uuid
+  customer_id       String       @map("customer_id") @db.Uuid
+  product_id        String       @map("product_id") @db.Uuid
+  quantity          Float?       @map("quantity")
+  additional_fields Json?        @map("additional_fields")
+  start_time        DateTime?    @map("start_time")
+  end_time          DateTime?    @map("end_time")
+  date              DateTime?    @map("date")
+  created_at        DateTime?    @default(now()) @db.Timestamptz(3)
+  updated_at        DateTime?    @default(now()) @updatedAt @db.Timestamptz(3)
+  contract_id       String?      @map("contract_id") @db.Uuid
+  vendor_id         String?      @db.Uuid
+  usage_type        String?
+  customer          customer     @relation(fields: [customer_id], references: [customer_id], onDelete: Cascade)
+  organization      organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  product           product      @relation(fields: [product_id], references: [product_id], onDelete: Cascade)
+
+  @@map("usage")
+}
+
+model contract_product {
+  id                String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  contract_id       String             @db.Uuid
+  product_id        String             @db.Uuid
+  unit_price        Float?
+  created_at        DateTime           @default(now()) @db.Timestamptz(3)
+  updated_at        DateTime?          @updatedAt @db.Timestamptz(3)
+  contract          contract           @relation(fields: [contract_id], references: [contract_id], onDelete: Cascade)
+  product           product            @relation(fields: [product_id], references: [product_id], onDelete: Cascade)
+  pricing_intervals pricing_interval[]
+
+  @@unique([contract_id, product_id])
+}
+
+model pricing_interval {
+  id                    String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  contract_product_id   String                    @db.Uuid
+  constant_amount       Float                     @default(0.0)
+  interval_min          Int
+  interval_max          Int?
+  unit_price            Float
+  pricing_interval_type PricingIntervalType       @default(RAMPED)
+  accumulation_period   PricingAccumulationPeriod @default(MONTHLY)
+  created_at            DateTime                  @default(now()) @db.Timestamptz(3)
+  updated_at            DateTime?                 @updatedAt @db.Timestamptz(3)
+  contract_product      contract_product          @relation(fields: [contract_product_id], references: [id], onDelete: Cascade)
+}
+
+model credit_grant {
+  credit_grant_id               String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customer_id                   String                     @map("customer_id") @db.Uuid
+  organization_id               String                     @map("organization_id") @db.Uuid
+  grant_date                    DateTime?                  @map("grant_date") @db.Date
+  expiry_date                   DateTime?                  @map("expiry_date") @db.Date
+  grant_value                   Float?                     @map("grant_value")
+  grant_unit                    GrantUnit?                 @map("grant_unit")
+  current_value                 Float?                     @map("current_value")
+  rev_recog_multiplier          Float?                     @map("rev_recog_multiplier")
+  additional_fields             Json?                      @map("additional_fields")
+  credit_type                   CreditType?                @map("credit_type")
+  created_at                    DateTime?                  @default(now()) @db.Timestamptz(3)
+  updated_at                    DateTime?                  @updatedAt @db.Timestamptz(3)
+  virtual_balance               Float?                     @map("virtual_balance")
+  credit_grant_restriction_type CreditGrantRestrictionType @default(NONE) @map("credit_grant_restriction_type")
+  approvals                     approval[]
+  customer                      customer                   @relation(fields: [customer_id], references: [customer_id], onDelete: Cascade)
+  organization                  organization               @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  credit_grant_ledgers          credit_grant_ledger[]
+  credit_grant_restrictions     credit_grant_restriction[]
+
+  @@map("credit_grant")
+}
+
+model credit_grant_restriction {
+  credit_grant_restriction_id String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  credit_grant_id             String       @map("credit_grant_id") @db.Uuid
+  product_id                  String?      @map("product_id") @db.Uuid
+  created_at                  DateTime?    @default(now()) @map("created_at")
+  updated_at                  DateTime?    @updatedAt @map("updated_at")
+  contract_id                 String?      @map("contract_id") @db.Uuid
+  contract                    contract?    @relation(fields: [contract_id], references: [contract_id], onDelete: Cascade)
+  creditGrant                 credit_grant @relation(fields: [credit_grant_id], references: [credit_grant_id], onDelete: Cascade)
+  product                     product?     @relation(fields: [product_id], references: [product_id], onDelete: Cascade)
+
+  @@map("credit_grant_restriction")
+}
+
+model credit_grant_ledger {
+  credit_grant_ledger_id String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  credit_grant_id        String              @map("credit_grant_id") @db.Uuid
+  date                   DateTime?           @default(now()) @map("date") @db.Date
+  credit_amount          Float?              @map("credit_amount")
+  debit_amount           Float?              @map("debit_amount")
+  description            String?             @map("description")
+  additional_fields      Json?               @map("additional_fields")
+  created_at             DateTime?           @default(now()) @db.Timestamptz(3)
+  updated_at             DateTime?           @updatedAt @db.Timestamptz(3)
+  status                 CreditLedgerStatus? @default(PENDING) @map("status")
+  creditGrant            credit_grant        @relation(fields: [credit_grant_id], references: [credit_grant_id], onDelete: Cascade)
+
+  @@map("credit_grant_ledger")
+}
+
+model invoice_adjustment_line_item {
+  invoice_adjustment_line_item_id String                          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id                 String?                         @map("organization_id") @db.Uuid
+  customer_sf_id                  String?                         @map("customer_sf_id")
+  action                          InvoiceAdjustmentLineItemAction @map("action")
+  invoice_line_item_id            String?                         @map("invoice_line_item_id") @db.Uuid
+  invoice_adjustment_id           String?                         @map("invoice_adjustment_id") @db.Uuid
+  item_id                         String?                         @map("item_id") @db.Uuid
+  description                     String?                         @map("description")
+  quantity                        Float?                          @map("quantity")
+  unit_price                      Float?                          @map("unit_price")
+  prev_quantity                   Float?
+  prev_unit_price                 Float?
+  date_created                    DateTime?                       @default(now()) @map("date_created")
+  created_at                      DateTime?                       @default(now()) @db.Timestamptz(3)
+  updated_at                      DateTime?                       @updatedAt @db.Timestamptz(3)
+  amount_to_adjust                Float?
+  department_id                   String?
+  prev_total_amount               Float?
+  total_amount                    Float?
+  invoice_adjustment              invoice_adjustment?             @relation(fields: [invoice_adjustment_id], references: [invoice_adjustment_id], onDelete: Cascade)
+  uac_line_item                   uac_line_item?                  @relation(fields: [invoice_line_item_id], references: [id])
+  organization                    organization?                   @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@map("invoice_adjustment_line_item")
+}
+
+model invoice_adjustment {
+  invoice_adjustment_id String                         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id       String                         @map("organization_id") @db.Uuid
+  invoice_id            String                         @map("invoice_id") @db.Uuid
+  adjusted_by           String                         @map("adjusted_by")
+  adjustment_date       DateTime                       @default(now()) @map("adjustment_date")
+  customer_id           String?                        @map("customer_id") @db.Uuid
+  customer_name         String?                        @map("customer_name")
+  total_amount          Float?                         @map("total_amount")
+  invoice_date          DateTime?                      @map("invoice_date")
+  approved_by           String?                        @map("approved_by")
+  original_value        String?                        @map("original_value")
+  created_at            DateTime?                      @default(now()) @db.Timestamptz(3)
+  updated_at            DateTime?                      @updatedAt @db.Timestamptz(3)
+  adjustment_reason     AdjustmentReason               @map("adjustment_reason")
+  stream_customer_id    String?                        @db.Uuid
+  reason                String?
+  approvals             approval[]
+    uac_invoice           uac_invoice                    @relation(fields: [invoice_id], references: [id], onDelete: Cascade)
+  organization          organization                   @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  line_item_adjustments invoice_adjustment_line_item[]
+
+  @@map("invoice_adjustment")
+}
+
+model uac_requests {
+  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  request_payload Json
+  request_type    String
+  organization_id String       @db.Uuid
+  organization    organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@map("uac_requests")
+}
+
+model product_to_uac_item {
+  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id String       @map("organization_id") @db.Uuid
+  product_id      String       @map("product_id") @db.Uuid
+  uac_item_id     String       @map("uac_item_id") @db.Uuid
+  organization    organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  uacItem         uac_item     @relation(fields: [uac_item_id], references: [id], onDelete: Cascade)
+
+  @@map("product_to_uac_item")
+}
+
+model approval {
+  approval_id            String                           @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  organization_id        String                           @db.Uuid
+  status                 approval_status                  @default(SUBMITTED)
+  created_at             DateTime?                        @default(now()) @db.Timestamptz(3)
+  updated_at             DateTime?                        @updatedAt @db.Timestamptz(3)
+  additional_fields      Json?
+  requested_by           String?
+  requested_date         DateTime?                        @default(now()) @db.Timestamptz(3)
+  request_comment        String?
+  approve_by             String?
+  approved_by            String?
+  approved_date          DateTime?
+  approval_comment       String?
+  object_type            approval_object_type
+  invoice_id             String?                          @db.Uuid
+  addon_id               String?                          @db.Uuid
+  invoice_adjustment_id  String?                          @db.Uuid
+  credit_grant_id        String?                          @db.Uuid
+  organization_addon_id  String?                          @db.Uuid
+  customer_addon_id      String?                          @db.Uuid
+  contract_addon_id      String?                          @db.Uuid
+  product_addon_id       String?                          @db.Uuid
+  contract_id            String?                          @db.Uuid
+  customer_id            String?                          @db.Uuid
+  product_id             String?                          @db.Uuid
+  plan_id                String?                          @db.Uuid
+  addon                  product?                         @relation(fields: [addon_id], references: [product_id], onDelete: Cascade)
+  contract_addon         contract_addon?                  @relation(fields: [contract_addon_id], references: [id], onDelete: Cascade)
+  credit_grant           credit_grant?                    @relation(fields: [credit_grant_id], references: [credit_grant_id], onDelete: Cascade)
+  customer_addon         customer_addon?                  @relation(fields: [customer_addon_id], references: [id], onDelete: Cascade)
+  invoice_adjustment     invoice_adjustment?              @relation(fields: [invoice_adjustment_id], references: [invoice_adjustment_id], onDelete: Cascade)
+  invoice                uac_invoice?                     @relation(fields: [invoice_id], references: [id], onDelete: Cascade)
+  organization_addon     organization_addon?              @relation(fields: [organization_addon_id], references: [id], onDelete: Cascade)
+  organization           organization                     @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  product_addon          product_addon?                   @relation(fields: [product_addon_id], references: [id], onDelete: Cascade)
+  slack_request_contents approval_slack_request_content[]
+}
+
+model approval_slack_request_content {
+  id                    String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  slack_request_content Json?
+  approval_id           String   @db.Uuid
+  approval              approval @relation(fields: [approval_id], references: [approval_id], onDelete: Cascade)
+}
+
+model contract_results {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  contract_id  String    @db.Uuid
+  parent       String?
+  sub          String?
+  invoice_date DateTime  @db.Timestamp(6)
+  value        Float
+  created_at   DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime? @default(now()) @db.Timestamptz(6)
+  contract     contract  @relation(fields: [contract_id], references: [contract_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model contract_signature {
+  id              String        @id @db.Uuid
+  organization_id String?       @db.Uuid
+  created_at      DateTime?     @default(now()) @db.Timestamp(6)
+  updated_at      DateTime?     @default(now()) @db.Timestamp(6)
+  signature       String?
+  organization    organization? @relation(fields: [organization_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model reminder_settings {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id String   @unique(map: "unique_organization_id") @db.Uuid
+  days_before_due BigInt?  @default(0)
+  on_due_date     Boolean? @default(true)
+  days_after_due  BigInt?  @default(0)
+  level           String   @default("organization")
+  level_id        String?
+}
+
+model scheduled_reminders {
+  id                String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id   String           @db.Uuid
+  invoice_id        String?          @db.Uuid
+  reminder_date     DateTime         @db.Timestamptz(6)
+  status            reminder_status  @default(PENDING)
+  reminder_type     reminder_types
+  created_at        DateTime         @default(now()) @db.Timestamptz(3)
+  updated_at        DateTime         @default(now()) @db.Timestamptz(3)
+  to                String
+  subject           String?
+  text              String?
+  attachments       Json?
+  customer_name     String?
+  email_action_type String?
+  reminder_object   String?
+  acc_uac_invoice   acc_uac_invoice? @relation(fields: [invoice_id], references: [id])
+}
+
+model acc_uac_invoice {
+  id                   String                            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id      String                            @db.Uuid
+  provider_entity_id   String?
+  platform_id          String?
+  account_id           String?
+  customer_id          String?                           @db.Uuid
+  stream_customer_id   String?                           @db.Uuid
+  subsidiary_id        String?
+  issue_date           DateTime?                         @db.Timestamptz(6)
+  due_date             DateTime?                         @db.Timestamptz(6)
+  status               uac_bill_status?
+  memo                 String?
+  document_number      String?
+  currency_code        String?
+  amount_due           Decimal?                          @db.Decimal(10, 2)
+  total_amount         Decimal?                          @db.Decimal(10, 2)
+  sub_total            Decimal?                          @db.Decimal(10, 2)
+  tax_amount           Decimal?                          @db.Decimal(10, 2)
+  total_discount       Decimal?                          @db.Decimal(10, 2)
+  created_at           DateTime                          @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime                          @default(now()) @db.Timestamptz(6)
+  synced               Boolean?                          @default(false)
+  pricer_invoice_id    String?                           @unique @db.Uuid
+  term                 String?                           @default("30")
+  platform_url         String?
+  is_vendor            Boolean?                          @default(false)
+  po_number            String?
+  pdf_link             String?
+  payment_link         String?
+  email_status         String?
+  organization         organization                      @relation(fields: [organization_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_organization")
+  customer             uac_customer?                     @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_stream_customer")
+  scheduled_reminders  scheduled_reminders[]
+  linked_payments      uac_invoice_payment[]
+  line_items           uac_line_item[]
+  unprocessed_payments unprocessed_uac_invoice_payment[]
+
+  @@unique([organization_id, provider_entity_id], map: "unique_organization_id_provider_entity_id")
+}
+
+model email_provider {
+  id              String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id String  @db.Uuid
+  provider_name   String  @db.String(255)
+  token           Json?
+  idtoken         Json?
+  account         Json?
+  refreshtoken    Json?
+  email           String?
+  email_action    String?
+
+  @@unique([organization_id, email_action])
+}
+
+model slack_bots {
+  id                    BigInt    @id @default(autoincrement())
+  client_id             String    @db.String(32)
+  app_id                String    @db.String(32)
+  enterprise_id         String?   @db.String(32)
+  enterprise_name       String?   @db.String(200)
+  team_id               String?   @db.String(32)
+  team_name             String?   @db.String(200)
+  bot_token             String?   @db.String(200)
+  bot_id                String?   @db.String(32)
+  bot_user_id           String?   @db.String(32)
+  bot_scopes            String?   @db.String(1000)
+  bot_refresh_token     String?   @db.String(200)
+  bot_token_expires_at  DateTime? @db.Timestamp(6)
+  is_enterprise_install Boolean
+  installed_at          DateTime  @db.Timestamp(6)
+
+  @@index([client_id, enterprise_id, team_id, installed_at], map: "slack_bots_idx")
+}
+
+model slack_installations {
+  id                                 BigInt    @id @default(autoincrement())
+  client_id                          String    @db.String(32)
+  app_id                             String    @db.String(32)
+  enterprise_id                      String?   @db.String(32)
+  enterprise_name                    String?   @db.String(200)
+  enterprise_url                     String?   @db.String(200)
+  team_id                            String?   @db.String(32)
+  team_name                          String?   @db.String(200)
+  bot_token                          String?   @db.String(200)
+  bot_id                             String?   @db.String(32)
+  bot_user_id                        String?   @db.String(32)
+  bot_scopes                         String?   @db.String(1000)
+  bot_refresh_token                  String?   @db.String(200)
+  bot_token_expires_at               DateTime? @db.Timestamp(6)
+  user_id                            String    @db.String(32)
+  user_token                         String?   @db.String(200)
+  user_scopes                        String?   @db.String(1000)
+  user_refresh_token                 String?   @db.String(200)
+  user_token_expires_at              DateTime? @db.Timestamp(6)
+  incoming_webhook_url               String?   @db.String(200)
+  incoming_webhook_channel           String?   @db.String(200)
+  incoming_webhook_channel_id        String?   @db.String(200)
+  incoming_webhook_configuration_url String?   @db.String(200)
+  is_enterprise_install              Boolean
+  token_type                         String?   @db.String(32)
+  installed_at                       DateTime  @db.Timestamp(6)
+
+  @@index([client_id, enterprise_id, team_id, user_id, installed_at], map: "slack_installations_idx")
+}
+
+model slack_oauth_states {
+  id        BigInt   @id @default(autoincrement())
+  state     String   @db.String(200)
+  expire_at DateTime @db.Timestamp(6)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model usage_header_mapping {
+  organization_id     String  @db.Uuid
+  source_headers      String? @db.String(100)
+  destination_headers String? @db.String(100)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model usage_partner_mapping {
+  organization_id     String @db.Uuid
+  client_partner_id   String @db.String(500)
+  client_partner_name String @db.String(500)
+  stream_partner_id   String @db.Uuid
+  stream_partner_name String @db.String(500)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model usage_product_mapping {
+  organization_id     String @db.Uuid
+  client_product_id   String @db.String(500)
+  client_partner_name String @db.String(500)
+  stream_product_id   String @db.Uuid
+  stream_partner_name String @db.String(500)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model usage_unprocessed {
+  customer_id     String?
+  product_id      String?
+  date            String?
+  customer_name   String?
+  vendor_id       String?
+  vendor_name     String?
+  product_name    String?
+  organization_id String?
+  id              String?   @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  contract_id     String?   @db.Uuid
+  updated_at      DateTime? @default(now()) @db.Timestamp(6)
+  quantity        Decimal?  @db.Decimal
+  usage_type      String?
+
+  @@ignore
+}
+
+model customer_signature {
+  id              String    @id(map: "contract_signature_pkey") @db.Uuid
+  organization_id String?   @db.Uuid
+  created_at      DateTime? @default(now()) @db.Timestamp(6)
+  updated_at      DateTime? @default(now()) @db.Timestamp(6)
+  signature       String?
+}
+
+model product_signature {
+  id              String    @id(map: "contract_signature_pkey") @db.Uuid
+  organization_id String?   @db.Uuid
+  created_at      DateTime? @default(now()) @db.Timestamp(6)
+  updated_at      DateTime? @default(now()) @db.Timestamp(6)
+  signature       String?
+}
+
+model uac_account {
+  id                 String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id    String               @db.Uuid
+  provider_entity_id String
+  platform_id        String
+  parent_id          String?              @db.Uuid
+  account_type       uac_account_type
+  category           uac_account_category
+  status             uac_account_status
+  balance            Decimal?             @db.Decimal
+  currency_code      currency?
+  name               String?
+  nominal_code       String?
+  created_at         DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime             @default(now()) @db.Timestamptz(6)
+  last_synced_at     String
+  platform_url       String?
+  platform_data      Json?
+
+  @@unique([organization_id, provider_entity_id])
+}
+
+model uac_subsidiary {
+  id                 String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id    String         @db.Uuid
+  provider_entity_id String
+  platform_id        String
+  parent_id          String?        @db.Uuid
+  country            String
+  elimination        Boolean
+  status             String
+  currency_code      currency?
+  name               String?
+  created_at         DateTime?      @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime?      @default(now()) @db.Timestamptz(6)
+  last_synced_at     String?
+  customers          uac_customer[]
+
+  @@unique([organization_id, provider_entity_id])
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model usage_processed {
+  customer_id     String?
+  product_id      String?
+  date            String?
+  customer_name   String?
+  vendor_id       String?
+  vendor_name     String?
+  product_name    String?
+  organization_id String?
+  id              String?   @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  contract_id     String?   @db.Uuid
+  updated_at      DateTime? @default(now()) @db.Timestamp(6)
+  quantity        Decimal?  @db.Decimal
+  usage_type      String?
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model carbonarc_vendor_totals {
+  vendorname String?   @db.String(20)
+  year       BigInt?
+  month      BigInt?
+  total      Float?
+  updated_at DateTime? @default(now()) @db.Timestamp(6)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model dashboard_stats_base {
+  organization_id                String?
+  month                          DateTime? @db.Timestamp(6)
+  charges                        Float?
+  payments                       Float?
+  returns                        Float?
+  bop_ar                         Float?
+  eop_ar                         Float?
+  net_credit_sales               Float?
+  avg_ar                         Float?
+  ar_turnover_ratio              Float?
+  ar_turnover_days               Float?
+  dso                            Float?
+  bop_mrr                        Float?
+  new_mrr                        Float?
+  expansion_mrr                  Float?
+  contraction_mrr                Float?
+  churn_mrr                      Float?
+  eop_mrr                        Float?
+  churn_rate                     BigInt?
+  bop_customer                   BigInt?
+  new_customer                   Float?
+  churn_customer                 Float?
+  eop_customer                   BigInt?
+  gross_sales_revenue            Float?
+  arpa                           Float?
+  acl                            Float?
+  cltv                           Float?
+  revenue_churn_rate             Float?
+  customer_churn_rate            Float?
+  non_recurring_one_time         Decimal?  @db.Decimal
+  no_non_recurring_one_time      Decimal?  @db.Decimal
+  artp                           Decimal?  @db.Decimal
+  lifetime_non_recurring_revenue Decimal?  @db.Decimal
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model mrr_by_customer {
+  organization_id String?
+  month           DateTime? @db.Timestamp(6)
+  customer        String?
+  mrr             Float?
+
+  @@ignore
+}
+
+model agent_interaction_enabled {
+  id              String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id String @db.Uuid
+  role            String
+  user_id         String @db.Uuid
+}
+
+
+
+model agent_store {
+  namespace String
+  key       String
+  value     Json?
+
+  @@id([namespace, key])
+}
+
+model async_job {
+  id              String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  job_id          String           @db.Uuid
+  job_type        String
+  response_url    String
+  status          async_job_status
+  organization_id String           @db.Uuid
+  created_at      DateTime?        @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime?        @default(now()) @db.Timestamptz(6)
+  response_body   Json?
+  platform_id     String?
+}
+
+model connections {
+  id                         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id            String    @db.Uuid
+  name                       String?
+  platform                   String?
+  link_url                   String?
+  status                     String?
+  access_token               String?
+  refresh_token              String?
+  expires_in                 BigInt?
+  created_at                 DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at                 DateTime  @default(now()) @db.Timestamptz(6)
+  historical_sync            Boolean?  @default(false)
+  historical_sync_time_stamp DateTime? @db.Timestamp(6)
+}
+
+model contract_reference_data {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id String    @db.Uuid
+  date            DateTime? @db.Timestamptz(6)
+  value           Float?
+  type            String
+  created_at      DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model payment_gateways {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id     String    @db.Uuid
+  provider            String
+  external_account_id String?
+  access_token        String?
+  refresh_token       String?
+  credentials         Json?
+  status              String    @default("CREATED")
+  connected_at        DateTime? @db.Timestamptz(6)
+  metadata            Json?
+  created_at          DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime? @default(now()) @db.Timestamptz(6)
+  connection_name     String?
+  email               String?
+}
+
+model sync_config {
+  connection_id         String    @id @db.Uuid
+  organization_id       String    @db.Uuid
+  provider              String
+  source_type           String
+  sync_interval_minutes BigInt?   @default(60)
+  last_synced           DateTime? @db.Timestamptz(6)
+  next_scheduled        DateTime? @db.Timestamptz(6)
+  id                    String    @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+}
+
+model sync_jobs {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  connection_id   String    @db.Uuid
+  organization_id String    @db.Uuid
+  provider        String
+  source_type     String
+  resource_type   String
+  sync_type       String
+  status          String    @default("PENDING")
+  started_at      DateTime? @db.Timestamptz(6)
+  completed_at    DateTime? @db.Timestamptz(6)
+  error           String?
+  created_at      DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+enum reconciliation_scope {
+  ORGANIZATION
+  GLOBAL
+}
+
+enum currency {
+  USD
+  CAD
+  EUR
+  GBP
+}
+
+enum invoice_status {
+  DRAFT
+  PAID
+  SUBMITTED
+  CANCELLED
+}
+
+enum us_state {
+  AL
+  AK
+  AS
+  AZ
+  AR
+  CA
+  CO
+  CT
+  DE
+  DC
+  FM
+  FL
+  GA
+  GU
+  HI
+  ID
+  IL
+  IN
+  IA
+  KS
+  KY
+  LA
+  ME
+  MH
+  MD
+  MA
+  MI
+  MN
+  MS
+  MO
+  MT
+  NE
+  NV
+  NH
+  NJ
+  NM
+  NY
+  NC
+  ND
+  MP
+  OH
+  OK
+  OR
+  PW
+  PA
+  PR
+  RI
+  SC
+  SD
+  TN
+  TX
+  UT
+  VT
+  VI
+  VA
+  WA
+  WV
+  WI
+  WY
+}
+
+enum uac_bill_status {
+  open
+  partially_paid
+  paid
+  void
+  draft
+  unknown
+  submitted
+}
+
+enum uac_bill_payment_type {
+  BILL_PAYMENT
+  BILL_CREDIT_MEMO
+  UNKNOWN
+}
+
+enum uac_bill_payments_line_item_type {
+  bill
+  journal_entry
+  credit_note
+  unknown
+}
+
+enum uac_invoice_payment_type {
+  INVOICE_PAYMENT
+  INVOICE_CREDIT_MEMO
+  UNKNOWN
+}
+
+enum uac_customer_status {
+  ACTIVE
+  INACTIVE
+  UNKNOWN
+}
+
+enum uac_vendor_status {
+  active
+  archived
+  unknown
+}
+
+enum uac_purchase_order_status {
+  open
+  closed
+  pending_bill
+  unknown
+}
+
+enum uac_item_status {
+  active
+  archived
+  unknown
+}
+
+enum uac_item_type {
+  inventory
+  non_inventory
+  service
+  discount
+  unknown
+}
+
+enum uac_address_type {
+  billing
+  shipping
+  po_box
+  unknown
+}
+
+enum uac_item_line_detail_type {
+  BILL
+  INVOICE
+}
+
+enum reconciliation_object_type {
+  contract
+  purchase_order
+  invoice
+  accounting_entry
+  banking_entry
+  product
+  customer
+  uac_customer
+}
+
+enum CreditLedgerStatus {
+  PENDING
+  CLEARED
+  REJECTED
+}
+
+enum InvoiceAdjustmentLineItemAction {
+  add
+  delete
+  modify
+}
+
+enum BillingFrequency {
+  MONTHLY
+  ANNUALY
+  QUARTERLY
+}
+
+enum PricingIntervalType {
+  RAMPED
+  STEPPED
+}
+
+enum PricingAccumulationPeriod {
+  MONTHLY
+  QUARTERLY
+  ANNUALLY
+}
+
+enum GrantUnit {
+  QUANTITY
+  AMOUNT
+}
+
+enum CreditGrantRestrictionType {
+  NONE
+  PRODUCT
+  CONTRACT
+}
+
+enum ReconciliationStatus {
+  MATCHED
+  UNMATCHED
+  REQUIRES_CONFIRMATION
+}
+
+enum CreditType {
+  PROMOCALL
+  PROMODOLLARS
+  BONUSDOLLARS
+  PREPAIDPACKAGEDOLLARS
+}
+
+enum AdjustmentReason {
+  INACCURATE_EXPERT_RATE
+  EXPERT_NOT_HELPFUL_FC
+  EXPERT_NOT_HELPFUL_PC
+  CALL_CANCELED_INITIATED
+  INTERNAL_PROJECT_SPECIAL_PROMO
+  TECHNICAL_ISSUE_QUALITY
+  TEGUS_EMPLOYEE_ERROR
+  MULITPLE_RESCHEDULES_BY_EXPERT
+  PREARRANGED_30_MIN_CALL
+  EXPERT_1_HOUR_MINIMUM
+  MISREPRESENTED_EXPERT
+  TRIAL_PERIOD_CALL
+  ROUND_TO_15_MIN
+  ROUND_TO_30_MIN
+  ROUND_TO_45_MIN
+  ROUND_TO_60_MIN
+  ROUND_TO_75_MIN
+  ROUND_TO_90_MIN
+  OTHER
+}
+
+enum approval_object_type {
+  INVOICE
+  ADDON
+  INVOICE_ADJUSTMENT
+  CREDIT_GRANT
+  ORGANIZATION_ADDON
+  CUSTOMER_ADDON
+  CONTRACT_ADDON
+  PRODUCT_ADDON
+  CONTRACT
+  CUSTOMER
+  PRODUCT
+  FIXED_FEE_PLAN
+  MINIMUM_PLAN
+  DISCOUNT_PLAN
+  USAGE_PLAN
+  REV_SHARE_PLAN
+  USAGE_REV_SHARE_PLAN
+}
+
+enum approval_status {
+  SUBMITTED
+  AWAITING_APPROVAL
+  APPROVED
+  DENIED
+  WITHDRAWN
+}
+
+enum reminder_status {
+  PENDING
+  SENT
+  FAILED
+  CANCELLED
+}
+
+enum reminder_types {
+  BEFORE_DUE_DATE
+  ON_DUE_DATE
+  AFTER_DUE_DATE
+  ON_DEMAND
+}
+
+enum uac_account_category {
+  asset
+  expense
+  equity
+  liability
+  income
+  nonposting
+  unknown
+}
+
+enum uac_account_status {
+  active
+  inactive
+  pending
+}
+
+enum uac_account_type {
+  accounts_payable
+  accounts_receivable
+  bank
+  fixed_asset
+  other_asset
+  other_current_asset
+  liability
+  equity
+  expense
+  other_expense
+  income
+  other_income
+  credit_card
+  cost_of_goods_sold
+  other_current_liability
+  long_term_liability
+  non_posting
+  unknown
+}
+
+enum async_job_status {
+  prequeued
+  pending
+  success
+  failure
+  handled
+}

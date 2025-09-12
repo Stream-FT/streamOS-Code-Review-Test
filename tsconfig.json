@@ -1,0 +1,50 @@
+{
+    "compilerOptions": {
+      /* Language and Environment */
+      "target": "es2020",
+      "lib": ["es2020"],
+  
+      /* Modules */
+      "allowSyntheticDefaultImports": true,
+      "resolveJsonModule": true,
+      "baseUrl": "./",
+      "rootDir": "./",
+      "paths": {
+        "@accounting/*": ["./accounting/src/*"],
+        "@common/*": ["./common/src/*"],
+        "@onboarding/*": ["./onboarding/src/*"],
+        "@authentication/*": ["./authentication/src/*"]
+      },
+      "module": "commonjs",
+      "moduleResolution": "node",
+  
+      /* JavaScript Support */
+      "allowJs": false,
+  
+      /* Emit */
+      "sourceMap": true,
+      "outDir": "dist",
+  
+      /* Interop Constraints */
+      "esModuleInterop": true,
+      "forceConsistentCasingInFileNames": true,
+  
+      /* Type Checking */
+      "strict": true,
+      "noImplicitAny": true,
+      "noImplicitThis": true,
+      "noUnusedLocals": true,
+      "noUnusedParameters": true,
+      "noImplicitReturns": true,
+      "allowUnusedLabels": false,
+      "allowUnreachableCode": false,
+  
+      /* Completeness */
+      "skipLibCheck": true,
+      "strictPropertyInitialization": true
+    },
+    "include": ["./**/*.ts", "./**/*.js"],
+    "exclude": ["dist", "node_modules", "infrastructure", "reconciliation", "automations"],
+    "typeRoots": ["./types", "./node_modules/@types"]
+  }
+  
